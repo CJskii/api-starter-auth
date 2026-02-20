@@ -20,10 +20,12 @@ connect().then(() => {
     import("./routes").then((routes) => {
       app.use("/api", routes.default);
 
-      // Start server
-      app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
-      });
+      // Start server only if not running in test environment
+      if (process.env.NODE_ENV !== 'test') {
+        app.listen(PORT, () => {
+          console.log(`Server is running on port ${PORT}`);
+        });
+      }
     });
   });
 });
@@ -35,9 +37,5 @@ process.on("SIGINT", async () => {
   process.exit(0);
 });
 
-// Example function
-const greet = (name: string): string => {
-  return `Hello, ${name}!`;
-};
-
-console.log(greet("World"));
+// Export app for testing
+export default app;

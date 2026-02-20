@@ -1,21 +1,15 @@
-version: '3.8'
-
 services:
   api:
     build: .
     ports:
       - "3000:3000"
-    volumes:
-      - .:/app
-      - /app/node_modules
     environment:
-      - NODE_ENV=development
+      - MONGODB_URI=mongodb://mongo:27017/user-api
     depends_on:
-      - mongodb
-    command: sh -c "npm install && npm run dev"
+      - mongo
     restart: unless-stopped
 
-  mongodb:
+  mongo:
     image: mongo:latest
     ports:
       - "27017:27017"
