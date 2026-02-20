@@ -1,5 +1,5 @@
-import { connect, closeDatabase, clearDatabase } from '../src/mongodb/mongo-mock';
-import { beforeAll, afterEach, afterAll } from '@jest/globals';
+import { connect, closeDatabase, clearDatabase } from "../src/mongodb/db";
+import { beforeAll, afterEach, afterAll } from "@jest/globals";
 
 // Connect to database before all tests
 beforeAll(async () => {

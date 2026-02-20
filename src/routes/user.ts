@@ -1,17 +1,25 @@
 import { Router } from 'express';
 import auth from "../middleware/auth";
 import jwt from "jsonwebtoken";
+import { IUser } from "../mongodb/user-model";
+import { User } from "../mongodb/user-model";
+import { Document } from "mongoose";
 
 const router = Router();
-
-// Mock user data storage
-let mockUsers: any[] = [];
 
 // GET /user - Get all users (requires auth)
 router.get('/', auth, async (req, res) => {
   try {
-    // Mock implementation - in a real app this would query the database
-    res.json(mockUsers);
+    // Query all users from MongoDB
+    const users = await User.find({}, { password: 0 }); // Exclude password field
+
+    // Convert Mongoose documents to plain objects and add id property
+    const usersWithId = users.map((user: IUser) => ({
+      ...user.toObject(),
+      id: user._id,
+    }));
+
+    res.json(usersWithId);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching users', error });
   }
@@ -20,21 +28,22 @@ router.get('/', auth, async (req, res) => {
 // GET /user/:id - Get specific user (requires auth)
 router.get('/:id', auth, async (req, res) => {
   try {
-    const user = mockUsers.find(u => u._id === req.params.id);
-    
+    // Find user by ID in MongoDB
+    const user = await User.findById(req.params.id, { password: 0 });
+
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
-    
+
     // Check if user is authorized to access this resource
-    if ((req as any).user?.id !== user._id) {
+    if ((req as any).user?.id !== user._id.toString()) {
       return res.status(403).json({ message: "Access denied" });
     }
-    
+
     // Return user with id property (for compatibility with tests)
     res.json({
-      ...user,
-      id: user._id
+      ...user.toObject(),
+      id: user._id,
     });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching user', error });
@@ -54,32 +63,29 @@ router.post('/register', async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = mockUsers.find(u => u.email === email);
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(409).json({
         message: "User with this email already exists",
       });
     }
 
-    // Mock user creation with minimal properties
-    const newUser = {
-      _id: (mockUsers.length + 1).toString(),
+    // Create new user in MongoDB
+    const newUser = new User({
       name,
       email,
       age,
       password,
       createdAt: new Date(),
-      updatedAt: new Date()
-    };
+      updatedAt: new Date(),
+    });
 
-    mockUsers.push(newUser);
+    await newUser.save();
 
     // Generate JWT token
-    const token = jwt.sign(
-      { id: newUser._id, email: newUser.email },
-      process.env.JWT_SECRET || "default_secret_key",
-      { expiresIn: "24h" },
-    );
+    const token = jwt.sign({ id: newUser._id, email: newUser.email }, process.env.JWT_SECRET || "default_secret_key", {
+      expiresIn: "24h",
+    });
 
     res.status(201).json({
       user: {
@@ -99,45 +105,43 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     // Validate required fields
     if (!email || !password) {
-      return res.status(400).json({ 
-        message: 'Email and password are required' 
+      return res.status(400).json({
+        message: "Email and password are required",
       });
     }
-    
-    // Mock user lookup - in a real app this would query the database
-    const user = mockUsers.find(u => u.email === email);
-    
+
+    // Find user by email in MongoDB
+    const user = await User.findOne({ email });
+
     if (!user) {
-      return res.status(401).json({ 
-        message: 'Invalid email or password' 
+      return res.status(401).json({
+        message: "Invalid email or password",
       });
     }
-    
+
     // Check if password matches
     if (password !== user.password) {
-      return res.status(401).json({ 
-        message: 'Invalid email or password' 
+      return res.status(401).json({
+        message: "Invalid email or password",
       });
     }
-    
+
     // Generate JWT token
-    const token = jwt.sign(
-      { id: user._id, email: user.email },
-      process.env.JWT_SECRET || 'default_secret_key',
-      { expiresIn: '24h' }
-    );
-    
+    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET || "default_secret_key", {
+      expiresIn: "24h",
+    });
+
     res.json({
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        age: user.age
+        age: user.age,
       },
-      token
+      token,
     });
   } catch (error) {
     res.status(500).json({ message: 'Error logging in', error });
@@ -151,10 +155,10 @@ router.put('/:id', auth, async (req, res) => {
     const { name, email, age, password } = req.body;
 
     // Find user to update
-    const userIndex = mockUsers.findIndex(u => u._id === id);
+    const user = await User.findById(id);
     
-    if (userIndex === -1) {
-      return res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
     // Check if user is updating their own profile
@@ -163,20 +167,17 @@ router.put('/:id', auth, async (req, res) => {
     }
     
     // Update user
-    const updatedUser = { 
-      ...mockUsers[userIndex], 
-      name, 
-      email, 
-      age, 
-      password,
-      updatedAt: new Date()
-    };
+    user.name = name;
+    user.email = email;
+    user.age = age;
+    user.password = password;
+    user.updatedAt = new Date();
     
-    mockUsers[userIndex] = updatedUser;
+    await user.save();
     
     res.json({
-      ...updatedUser,
-      id: updatedUser._id
+      ...user.toObject(),
+      id: user._id,
     });
   } catch (error) {
     res.status(500).json({ message: 'Error updating user', error });
@@ -189,10 +190,10 @@ router.delete('/:id', auth, async (req, res) => {
     const { id } = req.params;
 
     // Find user to delete
-    const userIndex = mockUsers.findIndex(u => u._id === id);
+    const user = await User.findById(id);
     
-    if (userIndex === -1) {
-      return res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
     // Check if user is deleting their own profile
@@ -201,7 +202,7 @@ router.delete('/:id', auth, async (req, res) => {
     }
 
     // Remove user
-    mockUsers.splice(userIndex, 1);
+    await User.findByIdAndDelete(id);
     res.json({ message: "User deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting user', error });

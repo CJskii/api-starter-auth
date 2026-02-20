@@ -1,6 +1,6 @@
 // Main entry point for the application
 import express, { Application } from "express";
-import { connect, closeDatabase, clearDatabase } from "./mongodb/mongo-mock";
+import { connect, closeDatabase, clearDatabase } from "./mongodb/db";
 
 const app: Application = express();
 const PORT = process.env.PORT || 3000;

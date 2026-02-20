@@ -1,7 +1,7 @@
 import request from 'supertest';
 import app from '../src/index';
-import { connect, closeDatabase, clearDatabase } from '../src/mongodb/mongo-mock';
-import User from '../src/mongodb/user-model';
+import { connect, closeDatabase, clearDatabase } from "../src/mongodb/db";
+
 
 beforeAll(async () => {
   await connect();
