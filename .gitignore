@@ -1,0 +1,49 @@
+# Logs
+logs
+*.log
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+lerna-debug.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# TypeScript compiled output
+dist/
+build/
+*.js
+*.js.map
+
+# Coverage directory
+coverage/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*~
+*.tmp
+*.temp
+
+# Aider 
+.aider*
