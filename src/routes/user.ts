@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import auth from "../middleware/auth";
 import jwt from "jsonwebtoken";
-import { User, IUser } from "../mongodb/user-model";
-import { hashPassword, isValidEmail, isValidPassword, validateId, logger } from "../utils";
+import { User } from "../mongodb/user-model";
+import { hashPassword, validateId, logger } from "../utils";
+import { validateSchema } from "../middleware/validation";
+import { userRegisterSchema, userLoginSchema, userUpdateSchema } from "../utils/";
 
 const router = Router();
 
@@ -69,34 +71,10 @@ router.get("/:id", auth, async (req, res) => {
 });
 
 // POST /user/register - Register new user
-router.post('/register', async (req, res) => {
+router.post("/register", validateSchema(userRegisterSchema), async (req, res) => {
   try {
     const { name, email, age, password } = req.body;
     logger.info("Registering new user", { name, email });
-
-    // Validate required fields
-    if (!name || !email || !password) {
-      logger.warn("Missing required fields for registration", { name, email });
-      return res.status(400).json({
-        message: "Name, email, and password are required",
-      });
-    }
-
-    // Validate email format
-    if (!isValidEmail(email)) {
-      logger.warn("Invalid email format", { email });
-      return res.status(400).json({
-        message: "Invalid email format",
-      });
-    }
-
-    // Validate password strength
-    if (!isValidPassword(password)) {
-      logger.warn("Password too short", { password });
-      return res.status(400).json({
-        message: "Password must be at least 8 characters long",
-      });
-    }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -140,31 +118,15 @@ router.post('/register', async (req, res) => {
     });
   } catch (error) {
     logger.error("Error creating user", { error });
-    res.status(500).json({ message: 'Error creating user', error });
+    res.status(500).json({ message: "Error creating user", error });
   }
 });
 
 // POST /user/login - Login user
-router.post('/login', async (req, res) => {
+router.post("/login", validateSchema(userLoginSchema), async (req, res) => {
   try {
     const { email, password } = req.body;
     logger.info("User login attempt", { email });
-
-    // Validate required fields
-    if (!email || !password) {
-      logger.warn("Missing email or password for login", { email });
-      return res.status(400).json({
-        message: "Email and password are required",
-      });
-    }
-
-    // Validate email format
-    if (!isValidEmail(email)) {
-      logger.warn("Invalid email format for login", { email });
-      return res.status(400).json({
-        message: "Invalid email format",
-      });
-    }
 
     // Find user by email in MongoDB
     const user = await User.findOne({ email });
@@ -201,12 +163,12 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     logger.error("Error logging in", { error });
-    res.status(500).json({ message: 'Error logging in', error });
+    res.status(500).json({ message: "Error logging in", error });
   }
 });
 
 // PUT /user/:id - Update user (requires auth)
-router.put("/:id", auth, async (req, res) => {
+router.put("/:id", auth, validateSchema(userUpdateSchema), async (req, res) => {
   const { id } = req.params;
   try {
     const { name, email, age, password } = req.body;
@@ -231,22 +193,6 @@ router.put("/:id", auth, async (req, res) => {
     if ((req as any).user?.id !== id) {
       logger.warn("Access denied for user update", { userId: (req as any).user?.id, requestedId: id });
       return res.status(403).json({ message: "Access denied. You can only update your own profile." });
-    }
-
-    // Validate email format if provided
-    if (email && !isValidEmail(email)) {
-      logger.warn("Invalid email format for update", { email });
-      return res.status(400).json({
-        message: "Invalid email format",
-      });
-    }
-
-    // Validate password strength if provided
-    if (password && !isValidPassword(password)) {
-      logger.warn("Password too short for update", { password });
-      return res.status(400).json({
-        message: "Password must be at least 8 characters long",
-      });
     }
 
     // Update user

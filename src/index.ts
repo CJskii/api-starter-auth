@@ -1,74 +1,52 @@
-// Main entry point for the application
-import express, { Application } from "express";
+import express from "express";
 import { connect, closeDatabase, clearDatabase } from "./mongodb/db";
+import { userRoute } from "./routes/user";
+import { logger } from "./utils";
 import dotenv from "dotenv";
-import { logger } from './utils/index'
 
+// Load environment variables
 dotenv.config();
-const app: Application = express();
-const PORT = process.env.PORT || 3000;
 
-// Validate environment
-const validateEnvironment = () => {
-  const validEnvironments = ['development', 'production', 'test'];
-  const env = process.env.NODE_ENV;
-  
-  if (!env) {
-    logger.warn("NODE_ENV is not set, defaulting to 'development'");
-    process.env.NODE_ENV = 'development';
-  } else if (!validEnvironments.includes(env)) {
-    logger.warn(`Invalid NODE_ENV value: ${env}. Valid values are: ${validEnvironments.join(', ')}`);
-    logger.warn("Defaulting to 'development'");
-    process.env.NODE_ENV = 'development';
-  }
-};
-
-validateEnvironment();
-
-const isDevelopment = process.env.NODE_ENV === 'development';
-const isProduction = process.env.NODE_ENV === 'production';
+const app = express();
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(express.json());
 
-// Connect to database
-connect()
-  .then(() => {
+// Routes
+app.use("/api/user", userRoute);
+
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({ status: "OK", timestamp: new Date().toISOString() });
+});
+
+// Start server
+const startServer = async () => {
+  try {
+    await connect();
     logger.info("Connected to database");
-    logger.info("Using environment:", process.env.NODE_ENV);
-    logger.info("Using port:", PORT);
-
-    // Only clear database in development environment
-    if (isDevelopment) {
-      logger.info("Clearing database in development environment...");
-      return clearDatabase();
-    }
-    return Promise.resolve();
-  })
-  .then(() => {
-    return import("./routes/index");
-  })
-  .then((routes) => {
-    app.use("/api", routes.default);
-
-    // Start server only if not running in test environment
-    if (process.env.NODE_ENV !== "test") {
-      app.listen(PORT, () => {
-        logger.info(`Server is running on port ${PORT}`);
-      });
-    }
-  })
-  .catch((error) => {
-    logger.error("Failed to start server:", error);
+    
+    app.listen(PORT, () => {
+      logger.info(`Server is running on port ${PORT}`);
+    });
+  } catch (error) {
+    logger.error("Failed to start server", { error });
     process.exit(1);
-  });
+  }
+};
 
-// Handle graceful shutdown
+// Graceful shutdown
 process.on("SIGINT", async () => {
   logger.info("Shutting down gracefully...");
   await closeDatabase();
   process.exit(0);
 });
 
-// Export app for testing
+// Export for testing
 export default app;
+
+// Start server if not in test environment
+if (process.env.NODE_ENV !== "test") {
+  startServer();
+}
