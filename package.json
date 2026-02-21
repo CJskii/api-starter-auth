@@ -9,7 +9,10 @@
     "dev": "ts-node src/index.ts",
     "clean": "rm -rf dist",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "docker:build": "docker build -t typescript-nodejs-app .",
+    "docker:up": "docker compose up",
+    "docker:down": "docker compose down"
   },
   "keywords": [],
   "author": "",
