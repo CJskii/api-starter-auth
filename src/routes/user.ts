@@ -1,18 +1,16 @@
 import { Router } from 'express';
 import auth from "../middleware/auth";
 import jwt from "jsonwebtoken";
-import { IUser } from "../mongodb/user-model";
-import { User } from "../mongodb/user-model";
-import { Document } from "mongoose";
-import { hashPassword, isValidEmail, isValidPassword, validateId } from "../utils";
-import { Types } from "mongoose";
-import { randomUUID } from "crypto";
+import { User, IUser } from "../mongodb/user-model";
+import { hashPassword, isValidEmail, isValidPassword, validateId, logger } from "../utils";
 
 const router = Router();
 
 // GET /user - Get all users (requires auth)
 router.get('/', auth, async (req, res) => {
   try {
+    logger.info("Fetching all users");
+    
     // Query all users from MongoDB
     const users = await User.find({}, { password: 0 }); // Exclude password field
 
@@ -22,47 +20,51 @@ router.get('/', auth, async (req, res) => {
       id: user._id,
     }));
 
+    logger.info("Successfully fetched users", { count: users.length });
     res.json(usersWithId);
   } catch (error) {
+    logger.error("Error fetching users", { error });
     res.status(500).json({ message: 'Error fetching users', error });
   }
 });
 
 // GET /user/:id - Get specific user (requires auth)
-router.get('/:id', auth, async (req, res) => {
+router.get("/:id", auth, async (req, res) => {
+  const { id } = req.params;
   try {
-    const { id } = req.params;
+    logger.info("Fetching user by ID", { id });
 
     // Validate ID format
     const idValidation = validateId(id);
     if (!idValidation.isValid) {
+      logger.warn("Invalid ID format", { id });
       return res.status(400).json({ message: idValidation.error });
     }
-
-    console.log("Fetching user with ID:", id);
 
     // Find user by ID in MongoDB
     const user = await User.findById(id, { password: 0 });
 
-    console.log("User found:", user);
-
     if (!user) {
+      logger.warn("User not found", { id });
       return res.status(404).json({ message: "User not found" });
     }
 
     // Check if user is authorized to access this resource
     // The auth middleware should have already verified the token and set req.user
     if ((req as any).user?.id !== user._id.toString()) {
+      logger.warn("Access denied for user", { userId: (req as any).user?.id, requestedId: id });
       return res.status(403).json({ message: "Access denied" });
     }
 
     // Return user with id property (for compatibility with tests)
+    logger.info("Successfully fetched user", { id: user._id });
     res.json({
       ...user,
       id: user._id,
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching user', error });
+    logger.error("Error fetching user", { id, error });
+    res.status(500).json({ message: "Error fetching user", error });
   }
 });
 
@@ -70,11 +72,11 @@ router.get('/:id', auth, async (req, res) => {
 router.post('/register', async (req, res) => {
   try {
     const { name, email, age, password } = req.body;
-
-    console.log("Registering user:", { name, email, age });
+    logger.info("Registering new user", { name, email });
 
     // Validate required fields
     if (!name || !email || !password) {
+      logger.warn("Missing required fields for registration", { name, email });
       return res.status(400).json({
         message: "Name, email, and password are required",
       });
@@ -82,6 +84,7 @@ router.post('/register', async (req, res) => {
 
     // Validate email format
     if (!isValidEmail(email)) {
+      logger.warn("Invalid email format", { email });
       return res.status(400).json({
         message: "Invalid email format",
       });
@@ -89,6 +92,7 @@ router.post('/register', async (req, res) => {
 
     // Validate password strength
     if (!isValidPassword(password)) {
+      logger.warn("Password too short", { password });
       return res.status(400).json({
         message: "Password must be at least 8 characters long",
       });
@@ -97,6 +101,7 @@ router.post('/register', async (req, res) => {
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      logger.warn("User already exists", { email });
       return res.status(409).json({
         message: "User with this email already exists",
       });
@@ -104,7 +109,6 @@ router.post('/register', async (req, res) => {
 
     // Create new user in MongoDB with hashed password
     const newUser = {
-      _id: randomUUID(),
       name,
       email,
       age,
@@ -113,23 +117,29 @@ router.post('/register', async (req, res) => {
       updatedAt: new Date(),
     };
 
-    await User.create(newUser);
+    const savedUser = await User.create(newUser);
 
     // Generate JWT token
-    const token = jwt.sign({ id: newUser._id, email: newUser.email }, process.env.JWT_SECRET || "default_secret_key", {
-      expiresIn: "24h",
-    });
+    const token = jwt.sign(
+      { id: savedUser._id, email: savedUser.email },
+      process.env.JWT_SECRET || "default_secret_key",
+      {
+        expiresIn: "24h",
+      },
+    );
 
+    logger.info("User registered successfully", { id: savedUser._id, email: savedUser.email });
     res.status(201).json({
       user: {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        age: newUser.age,
+        id: savedUser._id,
+        name: savedUser.name,
+        email: savedUser.email,
+        age: savedUser.age,
       },
       token,
     });
   } catch (error) {
+    logger.error("Error creating user", { error });
     res.status(500).json({ message: 'Error creating user', error });
   }
 });
@@ -138,9 +148,11 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    logger.info("User login attempt", { email });
 
     // Validate required fields
     if (!email || !password) {
+      logger.warn("Missing email or password for login", { email });
       return res.status(400).json({
         message: "Email and password are required",
       });
@@ -148,6 +160,7 @@ router.post('/login', async (req, res) => {
 
     // Validate email format
     if (!isValidEmail(email)) {
+      logger.warn("Invalid email format for login", { email });
       return res.status(400).json({
         message: "Invalid email format",
       });
@@ -157,6 +170,7 @@ router.post('/login', async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
+      logger.warn("User not found for login", { email });
       return res.status(401).json({
         message: "Invalid email or password",
       });
@@ -164,6 +178,7 @@ router.post('/login', async (req, res) => {
 
     // Check if password matches (using hashed password)
     if (hashPassword(password) !== user.password) {
+      logger.warn("Invalid password for user", { email });
       return res.status(401).json({
         message: "Invalid email or password",
       });
@@ -174,6 +189,7 @@ router.post('/login', async (req, res) => {
       expiresIn: "24h",
     });
 
+    logger.info("User login successful", { id: user._id, email: user.email });
     res.json({
       user: {
         id: user._id,
@@ -184,19 +200,22 @@ router.post('/login', async (req, res) => {
       token,
     });
   } catch (error) {
+    logger.error("Error logging in", { error });
     res.status(500).json({ message: 'Error logging in', error });
   }
 });
 
 // PUT /user/:id - Update user (requires auth)
-router.put('/:id', auth, async (req, res) => {
+router.put("/:id", auth, async (req, res) => {
+  const { id } = req.params;
   try {
-    const { id } = req.params;
     const { name, email, age, password } = req.body;
+    logger.info("Updating user", { id });
 
     // Validate ID format
     const idValidation = validateId(id);
     if (!idValidation.isValid) {
+      logger.warn("Invalid ID format for update", { id });
       return res.status(400).json({ message: idValidation.error });
     }
 
@@ -204,16 +223,19 @@ router.put('/:id', auth, async (req, res) => {
     const user = await User.findById(id);
 
     if (!user) {
+      logger.warn("User not found for update", { id });
       return res.status(404).json({ message: "User not found" });
     }
 
     // Check if user is updating their own profile
     if ((req as any).user?.id !== id) {
+      logger.warn("Access denied for user update", { userId: (req as any).user?.id, requestedId: id });
       return res.status(403).json({ message: "Access denied. You can only update your own profile." });
     }
 
     // Validate email format if provided
     if (email && !isValidEmail(email)) {
+      logger.warn("Invalid email format for update", { email });
       return res.status(400).json({
         message: "Invalid email format",
       });
@@ -221,6 +243,7 @@ router.put('/:id', auth, async (req, res) => {
 
     // Validate password strength if provided
     if (password && !isValidPassword(password)) {
+      logger.warn("Password too short for update", { password });
       return res.status(400).json({
         message: "Password must be at least 8 characters long",
       });
@@ -238,23 +261,27 @@ router.put('/:id', auth, async (req, res) => {
 
     await User.save(user);
 
+    logger.info("User updated successfully", { id: user._id });
     res.json({
       ...user,
       id: user._id,
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error updating user', error });
+    logger.error("Error updating user", { id, error });
+    res.status(500).json({ message: "Error updating user", error });
   }
 });
 
 // DELETE /user/:id - Delete user (requires auth)
-router.delete('/:id', auth, async (req, res) => {
+router.delete("/:id", auth, async (req, res) => {
+  const { id } = req.params;
   try {
-    const { id } = req.params;
+    logger.info("Deleting user", { id });
 
     // Validate ID format
     const idValidation = validateId(id);
     if (!idValidation.isValid) {
+      logger.warn("Invalid ID format for deletion", { id });
       return res.status(400).json({ message: idValidation.error });
     }
 
@@ -262,19 +289,23 @@ router.delete('/:id', auth, async (req, res) => {
     const user = await User.findById(id);
 
     if (!user) {
+      logger.warn("User not found for deletion", { id });
       return res.status(404).json({ message: "User not found" });
     }
 
     // Check if user is deleting their own profile
     if ((req as any).user?.id !== id) {
+      logger.warn("Access denied for user deletion", { userId: (req as any).user?.id, requestedId: id });
       return res.status(403).json({ message: "Access denied. You can only delete your own profile." });
     }
 
     // Remove user
     await User.findByIdAndDelete(id);
+    logger.info("User deleted successfully", { id: user._id });
     res.json({ message: "User deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: 'Error deleting user', error });
+    logger.error("Error deleting user", { id, error });
+    res.status(500).json({ message: "Error deleting user", error });
   }
 });
 

@@ -1,61 +1,61 @@
 import mongoose from "mongoose";
-import { mockDatabase, closeMockDatabase, clearMockDatabase } from "./mock-db";
+import { mockDatabase } from "./mock-db";
+import { logger } from "../utils/index";
 
 const connect = async () => {
-  console.log("Connecting to database...");
+  const isProduction = process.env.NODE_ENV === "production";
   
-  if (process.env.NODE_ENV === 'production') {
-    // Use real MongoDB in production
+  if (isProduction) {
+    // Use real MongoDB in production - minimal logging
     try {
       const uri = process.env.MONGODB_URI || "mongodb://mongo:27017/user-api";
       await mongoose.connect(uri);
-      console.log("Connected to MongoDB");
+      logger.info("Connected to MongoDB (production)");
     } catch (error) {
-      console.error("Failed to connect to MongoDB:", error);
+      logger.error("Failed to connect to MongoDB", { error });
       throw error;
     }
   } else {
-    // Use mock database in development
+    // Use mock database in development/test environments - detailed logging
+    logger.info("Connecting to mock database (development/test)");
     await mockDatabase();
-    console.log("Connected to mock database");
+    logger.info("Connected to mock database (development/test)");
   }
 };
 
 const closeDatabase = async () => {
-  console.log("Closing database connection...");
+  const isProduction = process.env.NODE_ENV === "production";
   
-  if (process.env.NODE_ENV === 'production') {
+  if (isProduction) {
     try {
       await mongoose.connection.close();
-      console.log("MongoDB connection closed");
+      logger.info("MongoDB connection closed (production)");
     } catch (error) {
-      console.error("Failed to close MongoDB connection:", error);
+      logger.error("Failed to close MongoDB connection", { error });
       throw error;
     }
   } else {
-    await closeMockDatabase();
-    console.log("Mock database connection closed");
+    logger.info("Mock database connection closed (development/test)");
   }
 };
 
 const clearDatabase = async () => {
-  console.log("Clearing database...");
+  const isProduction = process.env.NODE_ENV === "production";
   
-  if (process.env.NODE_ENV === 'production') {
+  if (isProduction) {
     try {
       const collections = Object.keys(mongoose.connection.collections);
       for (const collectionName of collections) {
         await mongoose.connection.collections[collectionName].deleteMany({});
       }
-      console.log("Database cleared");
+      logger.info("Database cleared (production)");
     } catch (error) {
-      console.error("Failed to clear database:", error);
+      logger.error("Failed to clear database", { error });
       throw error;
     }
   } else {
     // Mock database is already cleared on initialization
-    await clearMockDatabase();
-    console.log("Mock database cleared");
+    logger.info("Mock database cleared (development/test)");
   }
 };
 
