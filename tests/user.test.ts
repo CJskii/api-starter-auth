@@ -65,6 +65,32 @@ describe('User API', () => {
         .send(userData)
         .expect(400);
     });
+
+    it('should not register a user with invalid email format', async () => {
+      const userData = {
+        name: 'Jane Doe',
+        email: 'invalid-email',
+        password: 'password456'
+      };
+
+      await request(app)
+        .post('/api/user/register')
+        .send(userData)
+        .expect(400);
+    });
+
+    it('should not register a user with weak password', async () => {
+      const userData = {
+        name: 'Jane Doe',
+        email: 'weak@example.com',
+        password: 'short'
+      };
+
+      await request(app)
+        .post('/api/user/register')
+        .send(userData)
+        .expect(400);
+    });
   });
 
   describe('POST /user/login', () => {
@@ -95,6 +121,30 @@ describe('User API', () => {
         .post('/api/user/login')
         .send(loginData)
         .expect(401);
+    });
+
+    it('should not login with invalid email format', async () => {
+      const loginData = {
+        email: 'invalid-email',
+        password: 'password123'
+      };
+
+      await request(app)
+        .post('/api/user/login')
+        .send(loginData)
+        .expect(400);
+    });
+
+    it('should not login with missing fields', async () => {
+      const loginData = {
+        email: 'john@example.com'
+        // missing password
+      };
+
+      await request(app)
+        .post('/api/user/login')
+        .send(loginData)
+        .expect(400);
     });
   });
 
@@ -137,6 +187,13 @@ describe('User API', () => {
         .get('/api/user/507f1f77bcf86cd799439011')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
+    });
+
+    it('should return 400 for invalid ObjectId format', async () => {
+      await request(app)
+        .get('/api/user/invalid-id')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
     });
   });
 
@@ -197,6 +254,56 @@ describe('User API', () => {
         .send(updateData)
         .expect(403);
     });
+
+    it('should update user password', async () => {
+      const updateData = {
+        password: 'newpassword123'
+      };
+
+      const response = await request(app)
+        .put(`/api/user/${userId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(updateData)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('id');
+    });
+
+    it('should not update to invalid email format', async () => {
+      const updateData = {
+        email: 'invalid-email'
+      };
+
+      await request(app)
+        .put(`/api/user/${userId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(updateData)
+        .expect(400);
+    });
+
+    it('should not update to weak password', async () => {
+      const updateData = {
+        password: 'short'
+      };
+
+      await request(app)
+        .put(`/api/user/${userId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(updateData)
+        .expect(400);
+    });
+
+    it('should return 400 for invalid ObjectId format', async () => {
+      const updateData = {
+        name: 'Test User'
+      };
+
+      await request(app)
+        .put('/api/user/invalid-id')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(updateData)
+        .expect(400);
+    });
   });
 
   describe('DELETE /user/:id', () => {
@@ -236,6 +343,13 @@ describe('User API', () => {
         .delete(`/api/user/${newUserId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(403);
+    });
+
+    it('should return 400 for invalid ObjectId format', async () => {
+      await request(app)
+        .delete('/api/user/invalid-id')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
     });
   });
 });
