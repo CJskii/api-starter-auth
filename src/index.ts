@@ -1,7 +1,7 @@
 import express from "express";
-import { connect, closeDatabase, clearDatabase } from "./mongodb/db";
+import { connect, closeDatabase } from "./mongodb/db";
 import { userRoute } from "./routes/user";
-import { logger } from "./utils";
+import { logger } from "./utils/index";
 import dotenv from "dotenv";
 
 // Load environment variables

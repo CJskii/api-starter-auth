@@ -1,11 +1,11 @@
 import crypto from "crypto";
 import { Types } from "mongoose";
+import bcrypt from "bcrypt";
 
 // Helper function to hash passwords
 const hashPassword = (password: string): string => {
-  const hash = crypto.createHash("sha256");
-  hash.update(password + process.env.PASSWORD_SALT || "default_salt");
-  return hash.digest("hex");
+  const saltRounds = 10;
+  return bcrypt.hashSync(password, saltRounds);
 };
 
 // Helper function to validate email format
@@ -41,4 +41,9 @@ const validateId = (id: string): { isValid: boolean; error?: string } => {
   return { isValid: true };
 };
 
-export { hashPassword, isValidEmail, isValidPassword, validateId };
+// Helper function to compare passwords
+const comparePassword = (password: string, hash: string): boolean => {
+  return bcrypt.compareSync(password, hash);
+};
+
+export { hashPassword, isValidEmail, isValidPassword, validateId, comparePassword };

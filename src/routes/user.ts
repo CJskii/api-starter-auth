@@ -2,9 +2,10 @@ import { Router } from 'express';
 import auth from "../middleware/auth";
 import jwt from "jsonwebtoken";
 import { User } from "../mongodb/user-model";
-import { hashPassword, validateId, logger } from "../utils";
-import { validateSchema } from "../middleware/validation";
+import { hashPassword, comparePassword, validateId, logger } from "../utils";
 import { userRegisterSchema, userLoginSchema, userUpdateSchema } from "../utils/";
+import { validateSchema } from "../middleware/validation";
+import { dbAdapter } from "../mongodb/db-adapter";
 
 const router = Router();
 
@@ -139,7 +140,7 @@ router.post("/login", validateSchema(userLoginSchema), async (req, res) => {
     }
 
     // Check if password matches (using hashed password)
-    if (hashPassword(password) !== user.password) {
+    if (!comparePassword(password, user.password)) {
       logger.warn("Invalid password for user", { email });
       return res.status(401).json({
         message: "Invalid email or password",
@@ -195,22 +196,23 @@ router.put("/:id", auth, validateSchema(userUpdateSchema), async (req, res) => {
       return res.status(403).json({ message: "Access denied. You can only update your own profile." });
     }
 
-    // Update user
-    if (name !== undefined) user.name = name;
-    if (email !== undefined) user.email = email;
-    if (age !== undefined) user.age = age;
-    // Hash password if it's being updated
-    if (password) {
-      user.password = hashPassword(password);
-    }
-    user.updatedAt = new Date();
+    // Build update object
+    const update: any = {
+      updatedAt: new Date(),
+    };
 
-    await User.save(user);
+    if (name !== undefined) update.name = name;
+    if (email !== undefined) update.email = email;
+    if (age !== undefined) update.age = age;
+    if (password !== undefined) update.password = hashPassword(password);
 
-    logger.info("User updated successfully", { id: user._id });
+    // Use dbAdapter for updating
+    const updatedUser = await dbAdapter.updateUser(user, update);
+
+    logger.info("User updated successfully", { id: updatedUser._id });
     res.json({
-      ...user,
-      id: user._id,
+      ...updatedUser,
+      id: updatedUser._id,
     });
   } catch (error) {
     logger.error("Error updating user", { id, error });
@@ -245,8 +247,8 @@ router.delete("/:id", auth, async (req, res) => {
       return res.status(403).json({ message: "Access denied. You can only delete your own profile." });
     }
 
-    // Remove user
-    await User.findByIdAndDelete(id);
+    // Remove user using dbAdapter
+    await dbAdapter.deleteUser(id);
     logger.info("User deleted successfully", { id: user._id });
     res.json({ message: "User deleted successfully" });
   } catch (error) {
