@@ -45,7 +45,7 @@ A production-ready starter template for building scalable Node.js APIs using **T
 ## 1️⃣ Clone Repository
 
 ```bash
-git clone <your-repo-url>
+git clone git@github.com:CJskii/api-starter-auth.git
 cd your-project
 ```
 
