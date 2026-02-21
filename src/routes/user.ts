@@ -39,8 +39,12 @@ router.get('/:id', auth, async (req, res) => {
       return res.status(400).json({ message: idValidation.error });
     }
 
+    console.log("Fetching user with ID:", id);
+
     // Find user by ID in MongoDB
     const user = await User.findById(id, { password: 0 });
+
+    console.log("User found:", user);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -66,6 +70,8 @@ router.get('/:id', auth, async (req, res) => {
 router.post('/register', async (req, res) => {
   try {
     const { name, email, age, password } = req.body;
+
+    console.log("Registering user:", { name, email, age });
 
     // Validate required fields
     if (!name || !email || !password) {

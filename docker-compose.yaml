@@ -2,7 +2,7 @@ services:
   api:
     build: .
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:3000"
     environment:
       - MONGODB_URI=mongodb://mongo:27017/user-api
     depends_on:
