@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import { mockUserModel } from "./mock-db";
+import { mockUserModel } from "../mongodb/mock-db";
 
 export type Projection = Record<string, 0 | 1>;
 

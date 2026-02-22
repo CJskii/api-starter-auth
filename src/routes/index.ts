@@ -1,11 +1,11 @@
-import { Router } from 'express';
-import { helloRoute } from './hello';
-import { userRoute } from './user';
+import { Router } from "express";
+import { helloRoute } from "./hello";
+import { userRoute } from "./user.route";
 
 const router = Router();
 
-// Register routes
-router.use('/hello', helloRoute);
-router.use('/user', userRoute);
+// API routes
+router.use("/user", userRoute);
+router.use("/hello", helloRoute);
 
 export default router;

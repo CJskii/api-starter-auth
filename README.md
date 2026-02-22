@@ -133,13 +133,16 @@ docker compose down
     ├── middleware/
     │   ├── auth.ts
     │   ├── validation.ts
-    │   ├── request-logger.ts
+    │   ├── request-logger.ts   
     │   └── error-handler.ts
     ├── mongodb/
     │   ├── db.ts
     │   ├── db-adapter.ts
     │   └── mock-db.ts
+    ├── models/
+    │   └── user.model.ts
     ├── routes/
+    │   ├── index.ts
     │   ├── hello.ts
     │   └── user.ts
     ├── services/

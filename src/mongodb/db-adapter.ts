@@ -1,6 +1,6 @@
-import { User } from "./user-model";
+import { User } from "../models/user-model";
+import type { IUser } from "../models/user-model";
 import { toUserDto, toUserWithPasswordDto, type UserDTO, type UserWithPasswordDTO } from "../mappers/user.mapper";
-import type { IUser } from "./user-model";
 
 export const dbAdapter = {
   async findAllUsers(): Promise<UserDTO[]> {

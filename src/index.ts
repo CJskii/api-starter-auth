@@ -1,10 +1,9 @@
 import express from "express";
+import routes from "./routes";
 import dotenv from "dotenv";
 dotenv.config({ quiet: true });
 
 import { connect, closeDatabase } from "./mongodb/db";
-import { userRoute } from "./routes/user";
-import { helloRoute } from "./routes/hello";
 
 import { logger } from "./utils/index";
 import { requestLogger } from "./middleware/request-logger";
@@ -14,13 +13,13 @@ const app = express();
 const PORT = Number(process.env.PORT ?? 3000);
 const ENV = process.env.NODE_ENV ?? "development";
 
-// Middleware
+
+
 app.use(express.json());
 app.use(requestLogger);
 
-// Routes
-app.use("/api/user", userRoute);
-app.use("/api/hello", helloRoute);
+// Mount all routes under /api
+app.use("/api", routes);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString() });
