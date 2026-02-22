@@ -2,61 +2,128 @@ import mongoose from "mongoose";
 import { mockDatabase } from "./mock-db";
 import { logger } from "../utils/index";
 
-const connect = async () => {
-  const isProduction = process.env.NODE_ENV === "production";
-  
+const ENV = process.env.NODE_ENV ?? "development";
+const isProduction = ENV === "production";
+
+export const connect = async () => {
   if (isProduction) {
-    // Use real MongoDB in production - minimal logging
+    const uri = process.env.MONGODB_URI || "mongodb://mongo:27017/user-api";
+
     try {
-      const uri = process.env.MONGODB_URI || "mongodb://mongo:27017/user-api";
       await mongoose.connect(uri);
-      logger.info("Connected to MongoDB (production)");
+
+      logger.info("db.connect.success", {
+        layer: "db",
+        module: "mongodb",
+        action: "connect",
+        env: ENV,
+        driver: "mongoose",
+      });
     } catch (error) {
-      logger.error("Failed to connect to MongoDB", { error });
+      logger.error("db.connect.failed", {
+        layer: "db",
+        module: "mongodb",
+        action: "connect",
+        env: ENV,
+        driver: "mongoose",
+        error,
+        message: (error as any)?.message,
+        stack: (error as any)?.stack,
+      });
       throw error;
     }
-  } else {
-    // Use mock database in development/test environments - detailed logging
-    logger.info("Connecting to mock database (development/test)");
-    await mockDatabase();
-    logger.info("Connected to mock database (development/test)");
+    return;
   }
-};
 
-const closeDatabase = async () => {
-  const isProduction = process.env.NODE_ENV === "production";
-  
+  // dev/test mock
+  logger.info("db.connect.start", {
+    layer: "db",
+    module: "mockDb",
+    action: "connect",
+    env: ENV,
+  });
+
+  await mockDatabase();
+
+  logger.info("db.connect.success", {
+    layer: "db",
+    module: "mockDb",
+    action: "connect",
+    env: ENV,
+  });
+};;
+
+export const closeDatabase = async () => {
   if (isProduction) {
     try {
       await mongoose.connection.close();
-      logger.info("MongoDB connection closed (production)");
+
+      logger.info("db.close.success", {
+        layer: "db",
+        module: "mongodb",
+        action: "close",
+        env: ENV,
+        driver: "mongoose",
+      });
     } catch (error) {
-      logger.error("Failed to close MongoDB connection", { error });
+      logger.error("db.close.failed", {
+        layer: "db",
+        module: "mongodb",
+        action: "close",
+        env: ENV,
+        driver: "mongoose",
+        error,
+        message: (error as any)?.message,
+        stack: (error as any)?.stack,
+      });
       throw error;
     }
-  } else {
-    logger.info("Mock database connection closed (development/test)");
+    return;
   }
+
+  logger.info("db.close.success", {
+    layer: "db",
+    module: "mockDb",
+    action: "close",
+    env: ENV,
+  });
 };
 
-const clearDatabase = async () => {
-  const isProduction = process.env.NODE_ENV === "production";
-  
+export const clearDatabase = async () => {
   if (isProduction) {
     try {
       const collections = Object.keys(mongoose.connection.collections);
-      for (const collectionName of collections) {
-        await mongoose.connection.collections[collectionName].deleteMany({});
+      for (const name of collections) {
+        await mongoose.connection.collections[name].deleteMany({});
       }
-      logger.info("Database cleared (production)");
+
+      logger.info("db.clear.success", {
+        layer: "db",
+        module: "mongodb",
+        action: "clear",
+        env: ENV,
+        driver: "mongoose",
+      });
     } catch (error) {
-      logger.error("Failed to clear database", { error });
+      logger.error("db.clear.failed", {
+        layer: "db",
+        module: "mongodb",
+        action: "clear",
+        env: ENV,
+        driver: "mongoose",
+        error,
+        message: (error as any)?.message,
+        stack: (error as any)?.stack,
+      });
       throw error;
     }
-  } else {
-    // Mock database is already cleared on initialization
-    logger.info("Mock database cleared (development/test)");
+    return;
   }
-};
 
-export { connect, closeDatabase, clearDatabase };
+  logger.info("db.clear.success", {
+    layer: "db",
+    module: "mockDb",
+    action: "clear",
+    env: ENV,
+  });
+};

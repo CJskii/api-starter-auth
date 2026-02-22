@@ -4,12 +4,15 @@
   "description": "A Node.js project with TypeScript",
   "main": "dist/index.js",
   "scripts": {
+    "clean": "rm -rf dist",
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
-    "clean": "rm -rf dist",
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "start:prod": "cross-env LOG_PROFILE=prod node dist/index.js",
+    "dev": "cross-env LOG_PROFILE=info ts-node src/index.ts",
+    "dev:verbose": "cross-env LOG_PROFILE=verbose ts-node src/index.ts",
+    "dev:prodlogs": "cross-env LOG_PROFILE=prod ts-node src/index.ts",
+    "test": "cross-env LOG_PROFILE=test DOTENV_CONFIG_QUIET=true jest",
+    "test:watch": "cross-env LOG_PROFILE=test DOTENV_CONFIG_QUIET=true jest --watch",
     "docker:build": "docker build -t typescript-nodejs-app .",
     "docker:up": "docker compose up",
     "docker:down": "docker compose down"
@@ -27,11 +30,12 @@
     "supertest": "^6.3.0",
     "ts-jest": "^29.0.0",
     "ts-node": "^10.9.1",
-    "typescript": "^4.9.3"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "@types/bcrypt": "^6.0.0",
     "bcrypt": "^6.0.0",
+    "cross-env": "^10.1.0",
     "dotenv": "^17.3.1",
     "express": "^4.18.0",
     "jsonwebtoken": "^9.0.0",

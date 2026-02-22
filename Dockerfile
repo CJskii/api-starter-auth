@@ -1,23 +1,35 @@
-# Use the official Node.js 18 image as the base image
-FROM node:18
-
-# Set the working directory in the container
+# ---- build stage ----
+FROM node:24-bookworm-slim AS builder
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Install dependencies (including dev deps needed to build TypeScript)
 COPY package*.json ./
-
-# Install dependencies
 RUN npm ci
 
-# Copy the rest of the application code
+# Copy source and build
 COPY . .
-
-# Build the TypeScript project
 RUN npm run build
 
-# Expose the port the app runs on
+# Remove devDependencies so runtime copy is smaller/cleaner
+RUN npm prune --omit=dev
+
+
+# ---- runtime stage ----
+FROM node:24-bookworm-slim AS runtime
+WORKDIR /app
+
+# Production environment (your app can still use NODE_ENV for DB switching)
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Copy only what we need at runtime
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+
+# Optional but recommended: run as non-root
+USER node
+
 EXPOSE 3000
 
-# Command to run the application
-CMD ["npm", "start"]
+CMD ["node", "dist/index.js"]

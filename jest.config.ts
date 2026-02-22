@@ -8,5 +8,8 @@ export default {
   collectCoverageFrom: ["src/**/*.{js,ts}", "!src/**/*.d.ts"],
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov"],
+
+  setupFiles: ["<rootDir>/tests/jest.env.ts"],
+
   setupFilesAfterEnv: ["<rootDir>/tests/setup.ts"],
 };

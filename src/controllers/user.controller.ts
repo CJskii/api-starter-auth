@@ -1,121 +1,65 @@
-import type { Request, Response } from "express";
-import { logger } from "../utils/index";
-import { AuthRequest } from "../middleware/auth";
+import type { Request, Response, NextFunction } from "express";
+import type { AuthRequest } from "../middleware/auth";
 import { userService } from "../services/user.service";
 
-function handleServiceError(res: Response, error: unknown, fallbackMessage: string) {
-  const status = (error as any)?.status;
-  const message = (error as any)?.message;
-
-  if (typeof status === "number" && typeof message === "string") {
-    return res.status(status).json({ message });
-  }
-
-  logger.error(fallbackMessage, {
-    error,
-    message: (error as any)?.message,
-    stack: (error as any)?.stack,
-  });
-
-  return res.status(500).json({ message: fallbackMessage, error });
-}
-
 export const userController = {
-  // GET /user
-  list: async (_req: Request, res: Response) => {
+  // GET /user  (requires auth)
+  list: async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      logger.info("Fetching all users");
       const users = await userService.listUsers();
-      logger.info("Successfully fetched users", { count: users.length });
-      return res.json(users);
-    } catch (error) {
-      return handleServiceError(res, error, "Error fetching users");
+      res.json(users);
+    } catch (e) {
+      next(e);
     }
   },
 
-  // GET /user/:id
-  getById: async (req: AuthRequest, res: Response) => {
-    const { id } = req.params;
-
+  // GET /user/:id  (requires auth)
+  getById: async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      logger.info("Fetching user by ID", { id });
-
-      const user = await userService.getUserById(id, req.user?.id);
-
-      logger.info("Successfully fetched user", { id: user.id });
-      return res.json(user);
-    } catch (error) {
-      return handleServiceError(res, error, "Error fetching user");
+      const user = await userService.getUserById(req.params.id, req.user?.id);
+      res.json(user);
+    } catch (e) {
+      next(e);
     }
   },
 
   // POST /user/register
-  register: async (req: Request, res: Response) => {
+  register: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const payload = req.body as { name: string; email: string; age?: number; password: string };
-
-      logger.info("Registering new user", { name: payload.name, email: payload.email });
-
-      const result = await userService.register(payload);
-
-      logger.info("User registered successfully", { id: result.user.id, email: result.user.email });
-      return res.status(201).json(result);
-    } catch (error) {
-      return handleServiceError(res, error, "Error creating user");
+      const result = await userService.register(req.body);
+      res.status(201).json(result);
+    } catch (e) {
+      next(e);
     }
   },
 
   // POST /user/login
-  login: async (req: Request, res: Response) => {
+  login: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const payload = req.body as { email: string; password: string };
-      logger.info("User login attempt", { email: payload.email });
-
-      const result = await userService.login(payload);
-
-      logger.info("User login successful", { id: result.user.id, email: result.user.email });
-      return res.json(result);
-    } catch (error) {
-      return handleServiceError(res, error, "Error logging in");
+      const result = await userService.login(req.body);
+      res.json(result);
+    } catch (e) {
+      next(e);
     }
   },
 
-  // PUT /user/:id
-  update: async (req: AuthRequest, res: Response) => {
-    const { id } = req.params;
-
+  // PUT /user/:id  (requires auth)
+  update: async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const payload = req.body as {
-        name?: string;
-        email?: string;
-        age?: number;
-        password?: string;
-      };
-
-      logger.info("Updating user", { id });
-
-      const updatedUser = await userService.update(id, req.user?.id, payload);
-
-      logger.info("User updated successfully", { id: updatedUser.id });
-      return res.json(updatedUser);
-    } catch (error) {
-      return handleServiceError(res, error, "Error updating user");
+      const updated = await userService.update(req.params.id, req.user?.id, req.body);
+      res.json(updated);
+    } catch (e) {
+      next(e);
     }
   },
 
-  // DELETE /user/:id
-  remove: async (req: AuthRequest, res: Response) => {
-    const { id } = req.params;
-
+  // DELETE /user/:id  (requires auth)
+  remove: async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      logger.info("Deleting user", { id });
-
-      await userService.remove(id, req.user?.id);
-
-      logger.info("User deleted successfully", { id });
-      return res.json({ message: "User deleted successfully" });
-    } catch (error) {
-      return handleServiceError(res, error, "Error deleting user");
+      await userService.remove(req.params.id, req.user?.id);
+      res.json({ message: "User deleted successfully" });
+    } catch (e) {
+      next(e);
     }
   },
 };

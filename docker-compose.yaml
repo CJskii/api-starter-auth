@@ -1,9 +1,20 @@
 services:
   api:
     build: .
+    container_name: user-api
     ports:
       - "${PORT:-3000}:3000"
     environment:
+      # App
+      - PORT=3000
+      - NODE_ENV=production
+      - LOG_PROFILE=${LOG_PROFILE:-prod}
+
+      # Auth
+      - JWT_SECRET=${JWT_SECRET}
+      - PASSWORD_SALT=${PASSWORD_SALT:-10}
+
+      # DB
       - MONGODB_URI=mongodb://mongo:27017/user-api
     depends_on:
       - mongo
@@ -11,11 +22,13 @@ services:
 
   mongo:
     image: mongo:latest
-    ports:
-      - "27017:27017"
+    container_name: user-api-mongo
     volumes:
       - mongodb_data:/data/db
     restart: unless-stopped
+    # Optional: if you want to access Mongo from your host, uncomment:
+    # ports:
+    #   - "27017:27017"
 
 volumes:
   mongodb_data:
