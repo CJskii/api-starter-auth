@@ -5,250 +5,246 @@
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 ![Docker](https://img.shields.io/badge/docker-ready-blue)
 
-A production-ready starter template for building scalable Node.js APIs using **TypeScript**, featuring:
+A production-ready starter template for building scalable Node.js APIs
+using **TypeScript**, featuring:
 
-- 🔐 JWT Authentication Middleware
-- 🗄 MongoDB Integration
-- 🧪 Jest Test Suite
-- 🐳 Docker & Docker Compose Support
-- 🧱 Clean Project Architecture
+-   🔐 JWT Authentication Middleware
+-   🗄 MongoDB Integration
+-   🧪 Jest Test Suite
+-   🐳 Docker & Docker Compose Support
+-   🧱 Clean Project Architecture
+-   📊 Advanced Logging with Levels
 
----
+------------------------------------------------------------------------
 
 # 📦 Features
 
-- Express-based REST API
-- Modular route structure
-- Centralized authentication middleware
-- MongoDB connection abstraction
-- Mock database support for testing
-- Environment-based configuration
-- Production & development build scripts
-- Container-ready setup
+-   Express-based REST API
+-   Modular route structure
+-   Centralized authentication middleware
+-   MongoDB connection abstraction
+-   Mock database support for testing
+-   Environment-based configuration
+-   Production & development build scripts
+-   Container-ready setup
+-   Advanced logging with configurable levels
 
----
+------------------------------------------------------------------------
 
 # ⚙️ Tech Stack
 
-- Node.js
-- TypeScript
-- Express
-- MongoDB
-- JWT (JSON Web Tokens)
-- Jest
-- Docker
+-   Node.js
+-   TypeScript
+-   Express
+-   MongoDB
+-   JWT (JSON Web Tokens)
+-   Jest
+-   Docker
+-   Winston (Logging)
+-   ZOD (Validation)
 
----
+------------------------------------------------------------------------
 
 # 🛠 Installation
 
 ## 1️⃣ Clone Repository
 
-```bash
+``` bash
 git clone git@github.com:CJskii/api-starter-auth.git
 cd your-project
 ```
 
 ## 2️⃣ Install Dependencies
 
-```bash
+``` bash
 npm install
 ```
 
----
+------------------------------------------------------------------------
 
 # 🔐 Environment Variables
 
 Create a `.env` file in the root directory:
 
-```env
-PORT=3000
-MONGODB_URI=mongodb://localhost:27017/myapp
-JWT_SECRET=your-super-secret-jwt-key
-```
+    PORT=3000
+    MONGODB_URI=mongodb://localhost:27017/myapp
+    JWT_SECRET=your-super-secret-jwt-key
+    LOG_PROFILE=info
 
-> ⚠️ Never commit `.env` files to version control.
+⚠️ Never commit `.env` files to version control.
 
----
+------------------------------------------------------------------------
 
 # ▶️ Running the Application
 
 ## Development Mode
 
-```bash
+``` bash
 npm run dev
 ```
 
-- Uses `ts-node`
-- No build step required
-- Ideal for local development
+-   Uses ts-node
+-   No build step required
+-   Ideal for local development
 
----
+## Development Mode with Verbose Logging
+
+``` bash
+npm run dev:verbose
+```
+
+## Development Mode with Production-like Logs
+
+``` bash
+npm run dev:prodlogs
+```
 
 ## Production Mode
 
-```bash
+``` bash
 npm run build
 npm start
 ```
 
-- Compiles TypeScript → JavaScript
-- Runs compiled output from `dist/`
+------------------------------------------------------------------------
 
----
+# 🐳 Docker
 
-## 🐳 Docker
+## Build & Run
 
-### Build & Run
-
-```bash
+``` bash
 docker compose up --build
 ```
 
-Starts:
-- API container
-- MongoDB container
+Starts: - API container - MongoDB container
 
-### Stop Containers
+## Stop Containers
 
-```bash
+``` bash
 docker compose down
 ```
 
----
+------------------------------------------------------------------------
 
 # 📁 Project Structure
 
-```
+    src/
+    ├── index.ts
+    ├── middleware/
+    │   ├── auth.ts
+    │   ├── validation.ts
+    │   ├── request-logger.ts
+    │   └── error-handler.ts
+    ├── mongodb/
+    │   ├── db.ts
+    │   ├── db-adapter.ts
+    │   └── mock-db.ts
+    ├── routes/
+    │   ├── hello.ts
+    │   └── user.ts
+    ├── services/
+    │   └── user.service.ts
+    ├── controllers/
+    │   └── user.controller.ts
+    ├── utils/
+    │   ├── logger.ts
+    │   └── password.ts
+    ├── config/
+    │   └── logging.ts
+    ├── schemas/
+    │   └── user.schema.ts
+    └── mappers/
+        └── user.mapper.ts
 
-src/
-├── index.ts              # Application entry point
-├── middleware/
-│   └── auth.ts           # JWT authentication middleware
-├── mongodb/
-│   ├── db.ts             # MongoDB connection
-│   └── mock-db.ts        # Mock DB for testing
-├── routes/
-│   ├── hello.ts          # Health check route
-│   ├── index.ts          # Route aggregator
-│   └── user.ts           # User endpoints
-├── utils/
-│   ├── index.ts
-│   └── user.ts
-```
-
----
+------------------------------------------------------------------------
 
 # 🌐 API Endpoints
 
 ## 🔑 Authentication
 
-### Register
-
-```http
-POST /auth/register
-```
-
-### Login
-
-```http
-POST /auth/login
-```
+-   POST /auth/register
+-   POST /auth/login
 
 Response:
 
-```json
+``` json
 {
   "token": "your-jwt-token"
 }
 ```
 
----
-
 ## 👤 Users
 
-| Method | Endpoint         | Description        |
-|--------|------------------|-------------------|
-| GET    | /users           | Get all users     |
-| GET    | /users/:id       | Get user by ID    |
-| PUT    | /users/:id       | Update user       |
-| DELETE | /users/:id       | Delete user       |
+| Method | Endpoint     | Description        |
+|--------|-------------|-------------------|
+| GET    | /users      | Get all users     |
+| GET    | /users/:id  | Get user by ID    |
+| PUT    | /users/:id  | Update user       |
+| DELETE | /users/:id  | Delete user       |
 
----
+## 👋 Health
 
-## 👋 Hello
+-   GET /health
 
-```http
-GET /hello
-```
-
-Returns simple health check message.
-
----
+------------------------------------------------------------------------
 
 # 🔐 Authentication Usage
 
-Protected routes require a JWT token in the header:
+Protected routes require:
 
-```http
-Authorization: Bearer <your-token>
-```
+    Authorization: Bearer <your-token>
 
----
+------------------------------------------------------------------------
 
 # 🧪 Testing
 
-Run all tests:
-
-```bash
+``` bash
 npm test
-```
-
-Watch mode:
-
-```bash
 npm run test:watch
 ```
 
----
+------------------------------------------------------------------------
 
 # 📜 Available Scripts
 
-| Script | Description |
-|--------|------------|
-| build | Compile TypeScript |
-| start | Run compiled code |
-| dev | Run in development mode |
-| test | Run tests |
-| test:watch | Run tests in watch mode |
-| clean | Remove `dist` folder |
-| docker:build | Build Docker image |
-| docker:up | Start containers |
-| docker:down | Stop containers |
+| Script         | Description               |
+|---------------|--------------------------|
+| build         | Compile TypeScript       |
+| start         | Run compiled code        |
+| dev           | Development mode         |
+| dev:verbose   | Verbose logging          |
+| dev:prodlogs  | Production-style logs    |
+| test          | Run tests                |
+| test:watch    | Watch mode               |
+| clean         | Remove dist folder       |
+| docker:build  | Build Docker image       |
+| docker:up     | Start containers         |
+| docker:down   | Stop containers          |
 
----
+------------------------------------------------------------------------
 
 # 🚀 Deployment Notes
 
 For production:
 
-- Use a managed MongoDB instance
-- Set a strong `JWT_SECRET`
-- Enable HTTPS
-- Use a process manager like PM2 (if not using Docker)
-- Set `NODE_ENV=production`
+-   Use managed MongoDB
+-   Set strong JWT_SECRET
+-   Enable HTTPS
+-   Use Docker or process manager
+-   Set NODE_ENV=production
+-   Set LOG_PROFILE=prod
 
----
+------------------------------------------------------------------------
 
 # 🤝 Contributing
 
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to your branch
-5. Open a Pull Request
+1.  Fork the repository
+2.  Create feature branch
+3.  Commit changes
+4.  Push branch
+5.  Open Pull Request
 
----
+------------------------------------------------------------------------
 
 # 📄 License
 
