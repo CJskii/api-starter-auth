@@ -31,6 +31,40 @@ const clearMockDatabase = async () => {
   users = [];
 };
 
+function wrapDoc(user: User) {
+  // create a mutable doc copy
+  const doc: any = { ...user };
+
+  doc.save = async () => {
+    const idx = users.findIndex((u) => u._id === doc._id);
+
+    const persisted: User = {
+      _id: doc._id,
+      name: doc.name,
+      email: doc.email,
+      age: doc.age,
+      password: doc.password,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    };
+
+    if (idx === -1) {
+      users.push(persisted);
+    } else {
+      users[idx] = persisted;
+    }
+
+    return doc; // emulate mongoose returning the doc
+  };
+
+  doc.toObject = () => {
+    const { save, toObject, ...plain } = doc;
+    return { ...plain };
+  };
+
+  return doc;
+}
+
 // Helper functions to simulate MongoDB operations
 const mockUserModel = {
   find: async (filter: any = {}, projection: any = {}) => {
@@ -49,35 +83,31 @@ const mockUserModel = {
 
   findById: async (id: string, projection: any = {}) => {
     const user = users.find((u) => u._id === id);
-
     if (!user) return null;
 
-    // Simple projection handling
-    if (projection.password === 0) {
+    if (projection?.password === 0) {
       const { password, ...rest } = user;
-      return rest;
+      return { ...rest } as any;
     }
 
-    return user;
+    return wrapDoc(user);
   },
 
   findOne: async (filter: any, projection: any = {}) => {
     const user = users.find((u) => {
-      if (filter.email && u.email === filter.email) {
-        return true;
-      }
+      if (filter.email && u.email === filter.email) return true;
+      if (filter._id && u._id === filter._id) return true;
       return false;
     });
 
     if (!user) return null;
 
-    // Simple projection handling
-    if (projection.password === 0) {
+    if (projection?.password === 0) {
       const { password, ...rest } = user;
-      return rest;
+      return { ...rest } as any;
     }
 
-    return user;
+    return wrapDoc(user);
   },
 
   findByIdAndDelete: async (id: string) => {
@@ -90,14 +120,20 @@ const mockUserModel = {
   },
 
   create: async (user: User | any) => {
-    // Generate _id if not present (for new users)
-    if (!user._id) {
-      user._id = require("crypto").randomUUID();
-    }
+    if (!user._id) user._id = require("crypto").randomUUID();
 
-    // Add new user
-    users.push(user);
-    return user;
+    const newUser: User = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      age: user.age,
+      password: user.password,
+      createdAt: user.createdAt ?? new Date(),
+      updatedAt: user.updatedAt ?? new Date(),
+    };
+
+    users.push(newUser);
+    return wrapDoc(newUser);
   },
 
   save: async (user: User | any) => {
@@ -113,6 +149,17 @@ const mockUserModel = {
 
     return user;
   },
+
+  async deleteOne(filter: any) {
+    const id = filter?._id?.toString?.() ?? filter?._id ?? null;
+    if (!id) return { deletedCount: 0 };
+
+    const idx = users.findIndex((u) => String(u._id) === String(id));
+    if (idx === -1) return { deletedCount: 0 };
+
+    users.splice(idx, 1);
+    return { deletedCount: 1 };
+  },
 };
 
-export { mockDatabase, closeMockDatabase, clearMockDatabase, mockUserModel, users };
+export { mockDatabase, closeMockDatabase, clearMockDatabase, mockUserModel, users, wrapDoc };

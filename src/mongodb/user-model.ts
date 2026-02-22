@@ -1,11 +1,27 @@
-import { Schema, model, Document } from "mongoose";
+import { Schema, model } from "mongoose";
 import { mockUserModel } from "./mock-db";
 
-// Determine if we're in production
-const isProduction = process.env.NODE_ENV === 'production';
+export type Projection = Record<string, 0 | 1>;
 
-// Define the User interface
-export interface IUser extends Document {
+export interface IUserDocLike<T> {
+  toObject?: () => any;
+  save: () => Promise<IUserDocLike<T>>;
+  _id?: any;
+  id?: string;
+}
+
+export interface IUserModelLike<T> {
+  find(filter?: any, projection?: Projection): Promise<any[]>;
+  findOne(filter: any, projection?: Projection): Promise<any | null>;
+  findById(id: string, projection?: Projection): Promise<any | null>;
+  create(data: Partial<T>): Promise<any>;
+  deleteOne(filter: any): Promise<{ deletedCount?: number }>;
+}
+
+const isProduction = process.env.NODE_ENV === "production";
+
+export interface IUser {
+  save(): IUser | PromiseLike<IUser | null> | null;
   name: string;
   email: string;
   age?: number;
@@ -14,7 +30,6 @@ export interface IUser extends Document {
   updatedAt: Date;
 }
 
-// Create the Mongoose schema
 const userSchema = new Schema<IUser>({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
@@ -24,7 +39,6 @@ const userSchema = new Schema<IUser>({
   updatedAt: { type: Date, default: Date.now },
 });
 
-// Export the appropriate User model based on environment
-// In production, use Mongoose model; in development, use mock database
-// Use type assertion to satisfy TypeScript
-export const User = isProduction ? model<IUser>("User", userSchema) : (mockUserModel as any);
+export const User: IUserModelLike<IUser> = isProduction
+  ? (model<IUser>("User", userSchema) as unknown as IUserModelLike<IUser>)
+  : mockUserModel;
