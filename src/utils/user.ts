@@ -8,18 +8,6 @@ const hashPassword = (password: string): string => {
   return bcrypt.hashSync(password, saltRounds);
 };
 
-// Helper function to validate email format
-const isValidEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
-
-// Helper function to validate password strength
-const isValidPassword = (password: string): boolean => {
-  // Password must be at least 8 characters long
-  return password.length >= 8;
-};
-
 // Helper function to validate ID format and return error if invalid
 const validateId = (id: string): { isValid: boolean; error?: string } => {
   if (!id) {
@@ -46,4 +34,4 @@ const comparePassword = (password: string, hash: string): boolean => {
   return bcrypt.compareSync(password, hash);
 };
 
-export { hashPassword, isValidEmail, isValidPassword, validateId, comparePassword };
+export { hashPassword, validateId, comparePassword };

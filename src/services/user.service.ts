@@ -16,7 +16,7 @@ class HttpError extends Error {
 export const userService = {
   listUsers: async () => {
     const users = await dbAdapter.findAllUsers();
-    return users;
+    return users.map(toUserDto);
   },
 
   getUserById: async (id: string, requesterId?: string) => {
