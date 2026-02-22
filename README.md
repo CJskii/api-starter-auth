@@ -1,7 +1,7 @@
 # 🚀 TypeScript Node.js API Starter
 
-![Node.js](https://img.shields.io/badge/node-%3E%3D14-green)
-![TypeScript](https://img.shields.io/badge/typescript-4.x-blue)
+![Node.js](https://img.shields.io/badge/node-%3E%3D24-green)
+![TypeScript](https://img.shields.io/badge/typescript-5.x-blue)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 ![Docker](https://img.shields.io/badge/docker-ready-blue)
 
