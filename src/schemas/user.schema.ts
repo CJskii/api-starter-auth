@@ -1,6 +1,17 @@
-import { z, type ZodIssue } from "zod";
+import { z } from "zod";
 
-// Define Zod schemas for validation
+const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const isProduction = process.env.NODE_ENV === "production";
+
+export const idSchema = z
+  .string()
+  .min(1, "ID is required")
+  .refine((val) => objectIdRegex.test(val) || (!isProduction && uuidRegex.test(val)), {
+    message: isProduction ? "Invalid ID format" : "Invalid ID format (expected ObjectId or UUID)",
+  });
+
 export const userRegisterSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.email("Invalid email format"),
@@ -21,17 +32,5 @@ export const userUpdateSchema = z.object({
 });
 
 export const userIdParamsSchema = z.object({
-  id: z
-    .string()
-    .min(1, "User ID is required")
-    .regex(/^[0-9a-fA-F]{24}$/, "Invalid user ID format"),
+  id: idSchema,
 });
-
-export const validateUserInput = (data: unknown) => {
-  const result = userRegisterSchema.safeParse(data);
-
-  return {
-    isValid: result.success,
-    error: result.success ? null : result.error.issues.map((e: ZodIssue) => e.message).join(", "),
-  };
-};

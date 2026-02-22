@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { comparePassword, hashPassword, validateId } from "../utils";
+import { comparePassword, hashPassword } from "../utils";
 import { dbAdapter } from "../mongodb/db-adapter";
 import { toUserDto } from "../mappers";
 import { logger } from "../utils/logger";
@@ -20,13 +20,9 @@ export const userService = {
   },
 
   getUserById: async (id: string, requesterId?: string) => {
-    const idValidation = validateId(id);
-    if (!idValidation.isValid) throw new HttpError(400, idValidation.error!);
-
     const user = await dbAdapter.findUserById(id);
     if (!user) throw new HttpError(404, "User not found");
 
-    // authorization rule (your current rule)
     if (!requesterId || requesterId !== user.id.toString()) {
       throw new HttpError(403, "Access denied");
     }
@@ -74,9 +70,6 @@ export const userService = {
     requesterId: string | undefined,
     payload: { name?: string; email?: string; age?: number; password?: string },
   ) => {
-    const idValidation = validateId(id);
-    if (!idValidation.isValid) throw new HttpError(400, idValidation.error!);
-
     if (!requesterId || requesterId !== id) {
       throw new HttpError(403, "Access denied. You can only update your own profile.");
     }
@@ -96,9 +89,6 @@ export const userService = {
   },
 
   remove: async (id: string, requesterId?: string) => {
-    const idValidation = validateId(id);
-    if (!idValidation.isValid) throw new HttpError(400, idValidation.error!);
-
     if (!requesterId || requesterId !== id) {
       throw new HttpError(403, "Access denied. You can only delete your own profile.");
     }

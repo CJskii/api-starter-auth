@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { logger } from "../utils/logger";
+import { logger } from "../utils/index";
 import { AuthRequest } from "../middleware/auth";
 import { userService } from "../services/user.service";
 

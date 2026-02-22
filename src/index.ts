@@ -25,10 +25,10 @@ app.get("/health", (req, res) => {
 const startServer = async () => {
   try {
     await connect();
-    logger.info("Connected to database");
+    logger.info("Connected to database", {meta: { database: "MongoDB" }});
     
     app.listen(PORT, () => {
-      logger.info(`Server is running on port ${PORT}`);
+      logger.info(`Server is running on port ${PORT}`, {meta: { port: PORT }});
     });
   } catch (error) {
     logger.error("Failed to start server", { error });
